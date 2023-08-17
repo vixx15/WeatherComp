@@ -1,16 +1,18 @@
 package com.example.weathercomp
 
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
-import android.view.View
-import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -24,14 +26,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.weather.dto.WeatherTime
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.weathercomp.ui.theme.WeatherCompTheme
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.google.android.gms.location.LocationServices
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,18 +47,39 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen("Android")
+                    //MainScreen()
+                    val navController = rememberNavController()
+                    NavGraph(navController = navController)
                 }
             }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(name: String, modifier: Modifier = Modifier) {
-    var lat by remember { mutableStateOf(TextFieldValue("")) }
-    var long by remember { mutableStateOf(TextFieldValue("")) }
+fun MainScreen(
+    viewModel: WeatherViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    navyController: NavController,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted: Boolean ->
+                if (isGranted) {
+                    // Permission granted, update the location
+                    getCurrentLocation(context) { lat, long ->
+                        viewModel.locationText = "Latitude: $lat, Longitude: $long"
+                    }
+                }
+            })
+
+
+
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -65,7 +90,7 @@ fun MainScreen(name: String, modifier: Modifier = Modifier) {
 
             )
         Text(
-            text = "No temperatue",
+            text = viewModel.weatherTime?.currentWeather?.temperature.toString(),
             modifier = Modifier.padding(10.dp)
         )
 
@@ -76,21 +101,32 @@ fun MainScreen(name: String, modifier: Modifier = Modifier) {
 
 
         TextField(
-            value = lat,
-            onValueChange = { newText -> lat = newText },
+            value = viewModel.lat,
+            onValueChange = { newText -> viewModel.lat = newText },
             label = { Text("Latitude") },
             modifier = Modifier.padding(10.dp)
         )
 
         TextField(
-            value = long,
-            onValueChange = { newText -> long = newText },
-            label = { Text("Latitude") },
+            value = viewModel.long,
+            onValueChange = { newText -> viewModel.long = newText },
+            label = { Text("Longitude") },
             modifier = Modifier.padding(10.dp)
         )
 
         Button(
-            onClick = {},
+            onClick = {
+                if (viewModel.lat.text != "" && viewModel.long.text != "" && viewModel.lat.text
+                        .toDouble() <= 90 && viewModel.long.text.toDouble() < 180
+                ) {
+                    viewModel.forecast(
+                        viewModel.lat.text.toDouble(),
+                        viewModel.long.text.toDouble()
+                    )
+                    // viewModel.temperature =
+                    viewModel.weatherTime?.currentWeather?.temperature.toString()
+                }
+            },
             modifier = Modifier.padding(10.dp)
         ) {
             Text(text = "SUBMIT")
@@ -98,15 +134,108 @@ fun MainScreen(name: String, modifier: Modifier = Modifier) {
         }
 
         Button(
-            onClick = { /*TODO*/ },
+            onClick = {
+                if (hasLocationPermission(context)) {
+                    // Permission already granted, update the location
+                    getCurrentLocation(context) { lat, long ->
+                        viewModel.locationText = "Latitude: $lat, Longitude: $long"
+                        viewModel.lat = TextFieldValue(lat.toString())
+                        viewModel.long = TextFieldValue(long.toString())
+                    }
+                } else {
+                    // Request location permission
+                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            },
             modifier = Modifier.padding(10.dp)
         ) {
 
             Text(text = "LOCATION")
+
+        }
+        Text(text = viewModel.locationText)
+
+        Button(
+            onClick = { navyController.navigate(Screens.DetailScreen.route) },
+            modifier = Modifier.padding(10.dp)
+        ) {
+            Text(text = "DETAILS")
         }
     }
 }
 
+private fun hasLocationPermission(context: Context): Boolean {
+    return ContextCompat.checkSelfPermission(
+        context,
+        android.Manifest.permission.ACCESS_FINE_LOCATION
+    ) == PackageManager.PERMISSION_GRANTED
+}
+
+@Composable
+fun LocationScreen() {
+    val context = LocalContext.current
+    var location by remember { mutableStateOf("Your location") }
+
+    // Create a permission launcher
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+            onResult = { isGranted: Boolean ->
+                if (isGranted) {
+                    // Permission granted, update the location
+                    getCurrentLocation(context) { lat, long ->
+                        location = "Latitude: $lat, Longitude: $long"
+                    }
+                }
+            })
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(
+            onClick = {
+                if (hasLocationPermission(context)) {
+                    // Permission already granted, update the location
+                    getCurrentLocation(context) { lat, long ->
+                        location = "Latitude: $lat, Longitude: $long"
+
+                    }
+                } else {
+                    // Request location permission
+                    requestPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            }
+        ) {
+            Text(text = "Allow")
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = location)
+    }
+}
+
+private fun getCurrentLocation(context: Context, callback: (Double, Double) -> Unit) {
+    val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+    try {
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                if (location != null) {
+                    val lat = location.latitude
+                    val long = location.longitude
+                    callback(lat, long)
+                }
+            }
+            .addOnFailureListener { exception ->
+                // Handle location retrieval failure
+                exception.printStackTrace()
+            }
+    } catch (e: SecurityException) {
+
+    }
+}
 
 @Composable
 fun WeatherDetails() {
@@ -133,7 +262,7 @@ fun WeatherDetails() {
 @Composable
 fun GreetingPreview() {
     WeatherCompTheme {
-        MainScreen("Android")
+        //MainScreen()
     }
 }
 
