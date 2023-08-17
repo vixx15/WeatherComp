@@ -10,10 +10,10 @@ import androidx.navigation.compose.composable
 fun NavGraph(navController: NavHostController,viewModel: WeatherViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),){
     NavHost(navController = navController, startDestination = Screens.MainScreen.route){
         composable(route=Screens.MainScreen.route){
-            MainScreen(navyController = navController)
+            MainScreen(viewModel=viewModel,navyController = navController)
         }
         composable(route=Screens.DetailScreen.route){
-            WeatherDetails()
+            WeatherDetails(viewModel = viewModel)
         }
 
     }

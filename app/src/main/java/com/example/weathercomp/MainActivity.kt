@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,7 +62,8 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: WeatherViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    viewModel: WeatherViewModel,
+    //viewModel: WeatherViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     navyController: NavController,
     modifier: Modifier = Modifier
 ) {
@@ -238,21 +241,76 @@ private fun getCurrentLocation(context: Context, callback: (Double, Double) -> U
 }
 
 @Composable
-fun WeatherDetails() {
+fun WeatherDetails(viewModel: WeatherViewModel) {
     Column {
-        Text(text = "Latitude:")
-        Text(text = "Longitude:")
-        Text(text = "Generation Time (ms):")
-        Text(text = "UTC Offset (sec):")
-        Text(text = "Timezone:")
-        Text(text = "Timezone Abbreviation:")
-        Text(text = "Elevation:")
-        Text(text = "Temperature:")
-        Text(text = "Wind speed:")
-        Text(text = "Wind direction:")
-        Text(text = "Weather code:")
-        Text(text = "Is Day:")
-        Text(text = "Time:")
+        Row {
+            Text(text = "Latitude:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.latitude.toString())
+        }
+        Row {
+            Text(text = "Longitude:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.longitude.toString())
+        }
+
+        Row {
+            Text(text = "Generation Time (ms):", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.generationtimeMs.toString())
+        }
+
+        Row {
+            Text(text = "UTC Offset (sec):", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.utcOffsetSeconds.toString())
+        }
+
+        Row {
+            Text(text = "Timezone:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.timezone.toString())
+        }
+
+        Row {
+            Text(text = "Timezone Abbreviation:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.timezoneAbbreviation.toString())
+        }
+
+        Row {
+            Text(text = "Elevation:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.elevation.toString())
+        }
+
+        Row {
+            Text(text = "Temperature:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.currentWeather?.temperature.toString())
+        }
+
+        Row {
+            Text(text = "Wind speed:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.currentWeather?.windspeed.toString())
+        }
+
+
+        Row {
+            Text(text = "Wind direction:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.currentWeather?.winddirection.toString())
+        }
+
+
+        Row {
+            Text(text = "Weather code:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.currentWeather?.weathercode.toString())
+        }
+
+
+        Row {
+            Text(text = "Is Day:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.currentWeather?.isDay.toString())
+        }
+
+
+        Row {
+            Text(text = "Time:", fontWeight = FontWeight.Bold)
+            Text(text = viewModel.weatherTime?.currentWeather?.time.toString())
+        }
+
 
     }
 
