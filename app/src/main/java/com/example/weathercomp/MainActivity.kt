@@ -237,6 +237,7 @@ private fun getCurrentLocation(context: Context, callback: (Double, Double) -> U
             }
     } catch (e: SecurityException) {
 
+
     }
 }
 
